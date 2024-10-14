@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>11 of diamonds</title>
+	
+	<link rel="icon" href="hcards/Card_diamond.svg" type="image/x-icon">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            width: 800px;
+            height: 600px;
+            background-image: url('backgroundcd.png');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #deck {
+            width: 100px;
+            height: 140px;
+            background-color: rgba(221, 221, 221, 0.7);
+            margin: 20px auto;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+        }
+        #drawn-cards {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 700px;
+        }
+        .card {
+            width: 70px;
+            height: 98px;
+            margin: 5px;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #999;
+            border-radius: 5px;
+        }
+		
+       #high-score { 
+    font-size: 18px;
+    margin: 10px 0;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    position: absolute; /* Place them relative to the page */
+    top: 10px;          /* Distance from the top of the page */
+    right: 10px;        /* Distance from the right side of the page */
+    text-align: right;  /* Align the text to the right */
+}
+
+       #score { 
+    font-size: 18px;
+    margin: 10px 0;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    position: absolute; /* Place them relative to the page */
+    top: 40px;          /* Distance from the top of the page */
+    right: 10px;        /* Distance from the right side of the page */
+    text-align: right;  /* Align the text to the right */
+}
+
+#ruless {
+    position: absolute;  /* Places the rules at a fixed position */
+    top: 10px;           /* Distance from the top */
+    left: 10px;          /* Distance from the left */
+    color: white;        /* Text color */
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* Add text shadow */
+    font-size: 16px;     /* Adjust the font size */
+    max-width: 25%;      /* Set the max width to limit the text's width */
+    word-wrap: break-word; /* Ensure text wraps if it exceeds max-width */
+}
+
+
+        #restart {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            display: none;
+        }
+        #debug-container {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            width: 300px;
+            height: 150px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 12px;
+            text-align: left;
+            padding: 10px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);"><img src="hcards/logo.png" alt="description" style="width: 250px;"></h1>
+        <div id="high-score">High Score: 0</div><br>
+		<div id="score">Score: 0</div>
+		<div id="ruless"><h3>Rules:</h3>Draw 11 cards. The goal is to end with the highest score possible. Each card is worth it's number value. Jacks are worth 11, Queens are worth 12, Kings are worth 13, and Aces are worth 14. If you draw the <span style="color: cyan;">4 of circles</span>, it is worth 15 points. If you draw the <span style="color: red;">11 of diamonds</span>, the game ends.</div>
+        <div id="deck">Click to draw</div>
+        <div id="drawn-cards"></div>
+        <button id="restart">Restart Game</button>
+        <div id="debug-container"></div>
+    </div>
+	
+	
+
+    <script>
+        const deck = [
+            '2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C', 'JC', 'QC', 'KC', 'AC',
+            '2D', '3D', '4D', '5D', '6D', '7D', '8D', '9D', '10D', 'JD', 'QD', 'KD', 'AD',
+            '2H', '3H', '4H', '5H', '6H', '7H', '8H', '9H', '10H', 'JH', 'QH', 'KH', 'AH',
+            '2S', '3S', '4S', '5S', '6S', '7S', '8S', '9S', '10S', 'JS', 'QS', 'KS', 'AS',
+            '11D', '4ofCircle'
+        ];
+
+        let drawnCards = [];
+        let score = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+
+        function shuffleDeck(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function getCardValue(card) {
+            if (card === '11D') return 0;
+            if (card === '4ofCircle') return 15;
+            const value = card.slice(0, -1);
+            if (['J', 'Q', 'K', 'A'].includes(value)) {
+                return {'J': 11, 'Q': 12, 'K': 13, 'A': 14}[value];
+            }
+            return parseInt(value);
+        }
+
+        function drawCard() {
+            debug("Draw card function called");
+            if (drawnCards.length >= 11) {
+                debug("Maximum cards drawn");
+                endGame();
+                return;
+            }
+
+            const card = deck.pop();
+            debug(`Card drawn: ${card}`);
+            drawnCards.push(card);
+
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card';
+            cardElement.style.backgroundImage = `url('hcards/${card}.png')`;
+            document.getElementById('drawn-cards').appendChild(cardElement);
+
+            const cardValue = getCardValue(card);
+            score += cardValue;
+            document.getElementById('score').textContent = `Score: ${score}`;
+
+            debug(`Card value: ${cardValue}, New score: ${score}`);
+
+            if (card === '11D') {
+                debug("11 of Diamonds drawn. Game over.");
+                endGame();
+            } else if (drawnCards.length === 11) {
+                debug("11 cards drawn. Game over.");
+                endGame();
+            }
+        }
+
+        function endGame() {
+            debug("Game ended");
+            document.getElementById('deck').removeEventListener('click', drawCard);
+            document.getElementById('deck').textContent = 'Game Over';
+            document.getElementById('restart').style.display = 'block';
+            
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('highScore', highScore);
+                document.getElementById('high-score').textContent = `High Score: ${highScore}`;
+                debug(`New high score: ${highScore}`);
+            }
+        }
+
+        function restartGame() {
+            deck.length = 0;
+            deck.push(...[
+                '2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C', 'JC', 'QC', 'KC', 'AC',
+                '2D', '3D', '4D', '5D', '6D', '7D', '8D', '9D', '10D', 'JD', 'QD', 'KD', 'AD',
+                '2H', '3H', '4H', '5H', '6H', '7H', '8H', '9H', '10H', 'JH', 'QH', 'KH', 'AH',
+                '2S', '3S', '4S', '5S', '6S', '7S', '8S', '9S', '10S', 'JS', 'QS', 'KS', 'AS',
+                '11D', '4ofCircle'
+            ]);
+            shuffleDeck(deck);
+            drawnCards = [];
+            score = 0;
+            document.getElementById('score').textContent = 'Score: 0';
+            document.getElementById('drawn-cards').innerHTML = '';
+            document.getElementById('deck').textContent = 'Click to draw';
+            document.getElementById('deck').addEventListener('click', drawCard);
+            document.getElementById('restart').style.display = 'none';
+            debug("Game restarted");
+        }
+
+        function debug(message) {
+            console.log(message);
+            const debugContainer = document.getElementById('debug-container');
+            debugContainer.innerHTML += message + "<br>";
+            debugContainer.scrollTop = debugContainer.scrollHeight;
+        }
+
+        // Initialize game
+        shuffleDeck(deck);
+        document.getElementById('deck').addEventListener('click', drawCard);
+        document.getElementById('restart').addEventListener('click', restartGame);
+        document.getElementById('high-score').textContent = `High Score: ${highScore}`;
+        debug("Game initialized. Deck shuffled and event listener added.");
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+	
+
+
+
