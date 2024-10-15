@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platformer Game</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            width: 800px;
+            height: 600px;
+            position: relative;
+            overflow: hidden;
+            background-image: url('backgroundcube.png'); /* Level background */
+            background-size: cover;
+            display: none; /* Initially hide game */
+        }
+        .character {
+            position: absolute;
+            width: 50px; /* Original sprite width */
+            height: 50px; /* Original sprite height */
+            left: 50px; /* Starting horizontal position */
+            bottom: 20px; /* Start position on the ground */
+            background-size: 100% 100%; /* Stretch the sprite */
+            background-image: url('red/red_idle1.png'); /* Default character sprite */
+        }
+        .platform {
+            position: absolute;
+            background-color: #666; /* Color for platforms */
+            width: 100%; /* Full width platform */
+            height: 20px; /* Platform height */
+            bottom: 0; /* Positioned at the bottom */
+        }
+        #character-select {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-image: url('backgroundcd.png'); /* Background for character select */
+            background-size: cover;
+            width: 800px;
+            height: 600px;
+            color: white;
+            text-align: center;
+        }
+        .char-preview {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; /* Align left */
+            width: 300px;
+            height: 70px;
+            background-color: rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+            color: white;
+            font-size: 24px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            padding-left: 10px; /* Add padding */
+        }
+        .char-preview img {
+            width: 50px; /* Character preview image size */
+            height: 50px; /* Character preview image size */
+            margin-right: 10px; /* Space between image and text */
+        }
+        .char-button {
+            width: 200px;
+            height: 50px;
+            margin: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .char-button:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            color: black;
+        }
+		
+		#back-button {
+    position: absolute; /* Positioning to place it on the screen */
+    top: 20px; /* Distance from the top */
+    right: 20px; /* Distance from the right */
+}
+
+    </style>
+</head>
+<body>
+    <div id="character-select">
+        <div class="char-preview" id="preview">
+            <img src="red/green_idle1.png" alt="Red Cube"> Cube Game Demo
+        </div>
+		<h3>Select a Character:</h3>
+        <div>
+            <button class="char-button" onclick="selectCharacter('red')">
+                <img src="red/red_idle1.png" alt="Red Cube" style="width: 20px; height: 20px;"> Red Cube
+            </button>
+            <button class="char-button" onclick="selectCharacter('blue')">
+                <img src="blue/blue_idle1.png" alt="Blue Cube" style="width: 20px; height: 20px;"> Blue Cube
+            </button>
+            <button class="char-button" onclick="selectCharacter('green')">
+                <img src="green/green_idle1.png" alt="Green Cube" style="width: 20px; height: 20px;"> Green Cube
+            </button>
+        </div>
+		<p>Controls: Left & Right arrow keys to move, Space Bar to Jump</p>
+    </div>
+
+    <div id="game-container">
+        <div class="platform"></div> <!-- Ground platform -->
+        <div class="character" id="character"></div>
+    </div>
+	
+	<button class="char-button" id="back-button">Back to Menu</button>
+
+    <script>
+        let currentCharacter = 'red'; // Default character
+        const character = document.getElementById('character');
+        const preview = document.getElementById('preview');
+        let isJumping = false;
+        let jumpSpeed = 0;
+        const gravity = 1;
+        const moveSpeed = 5;
+        let keys = {};
+
+        function selectCharacter(characterType) {
+            currentCharacter = characterType;
+            preview.querySelector('img').src = `${characterType}/${characterType}_idle1.png`; // Update preview image
+            preview.textContent = `${characterType.charAt(0).toUpperCase() + characterType.slice(1)} Cube`; // Update text
+            character.style.backgroundImage = `url('${characterType}/${characterType}_idle1.png')`;
+            character.style.bottom = '20px'; // Reset position on character select
+            character.style.left = '50px'; // Reset position on character select
+            document.getElementById('character-select').style.display = 'none'; // Hide select screen
+            document.getElementById('game-container').style.display = 'block'; // Show game
+            requestAnimationFrame(gameLoop); // Start the game loop
+        }
+
+        document.addEventListener('keydown', (event) => {
+            keys[event.key] = true; // Track key state
+        });
+
+        document.addEventListener('keyup', (event) => {
+            keys[event.key] = false; // Track key state
+        });
+
+        function gameLoop() {
+            // Handle horizontal movement
+            if (keys['ArrowLeft']) {
+                character.style.left = (parseInt(character.style.left) - moveSpeed) + 'px'; // Move left
+            }
+            if (keys['ArrowRight']) {
+                character.style.left = (parseInt(character.style.left) + moveSpeed) + 'px'; // Move right
+            }
+
+            // Jump
+            if (keys[' '] && !isJumping) {
+                isJumping = true;
+                jumpSpeed = 15; // Initial jump speed
+            }
+
+            // Handle jumping
+            if (isJumping) {
+                character.style.bottom = (parseInt(character.style.bottom) + jumpSpeed) + 'px'; // Move up
+                jumpSpeed -= gravity; // Apply gravity
+
+                // Reset jumping if character falls below ground level
+                if (parseInt(character.style.bottom) <= 20) {
+                    character.style.bottom = '20px'; // Stay on the platform
+                    isJumping = false; // Stop jumping
+                    jumpSpeed = 0; // Reset jump speed
+                }
+            }
+
+            requestAnimationFrame(gameLoop); // Continue game loop
+        }
+    </script>
+	
+	<script>
+	
+document.getElementById('back-button').addEventListener('click', function() {
+    location.reload(); // Refresh the page
+});
+
+
+</script>
+	
+	
+	
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
